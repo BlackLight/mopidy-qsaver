@@ -24,7 +24,6 @@ class QSaverFrontend(pykka.ThreadingActor, CoreListener):
             tracklist = self.core.tracklist.get_tracks().get()
             uri_list = [t.uri for t in tracklist]
             f.write(str(uri_list))
-        f.closed
         logger.info("Qsaver has saved your tracklist!")
 
     def restoreQueue(self):
@@ -32,9 +31,14 @@ class QSaverFrontend(pykka.ThreadingActor, CoreListener):
         if os.path.exists(self.backup_file):
             with open(self.backup_file, 'r') as f:
                 uri_list_str = f.read()
-                uri_list = eval(uri_list_str)  # convert to array
+                try:
+                    uri_list = eval(uri_list_str)  # convert to array
+                except Exception as e:
+                    logger.warning('Unable to load the tracklist from {}: {}'.format(
+                        self.backup_file, str(e)))
+                    uri_list = []
+
                 self.core.tracklist.add(None, None, None, uri_list)
-            f.closed
             logger.info("Qsaver has restored your tracklist!")
         else:
             logger.info("Qsaver unable to restore tracklist file")
